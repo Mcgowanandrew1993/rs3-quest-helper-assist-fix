@@ -101,6 +101,7 @@
 			if (!cur.done) cur.done = {};
 			if (!cur.items) cur.items = {};
 			var touched = false;
+			if (inc.completed === true && !cur.completed) { cur.completed = true; touched = true; }
 			["done", "items"].forEach(function (field) {
 				var m = inc[field];
 				if (!m || typeof m !== "object") return;
@@ -2139,7 +2140,8 @@
 
 	function markQuestComplete(message) {
 		if (!guide) return;
-		var changed = false;
+		var changed = !questProgress().completed;
+		questProgress().completed = true;
 		flatSteps.forEach(function (s) {
 			if (!isDone(s)) { questProgress().done[stepKey(s)] = true; changed = true; }
 			(s.subs || []).forEach(function (_, k) {
@@ -2355,7 +2357,7 @@
 				setAssistStatus("Assist: any option works on this screen — pick whichever you like.");
 			} else if (allMatches.length) {
 				drawOptionBoxes(allMatches, pos, img);
-				setAssistStatus((dialogReader.usingButtonFallback ? "Assist: button fallback v4.4 — highlighted \"" : "Assist: highlighted \"") +
+				setAssistStatus((dialogReader.usingButtonFallback ? "Assist: button fallback v4.5 — highlighted \"" : "Assist: highlighted \"") +
 					(allMatches[0].text || ("option " + (dlg.opts.indexOf(allMatches[0]) + 1))) + "\"" +
 					(matchedTarget.subIndex !== null ? " (sub-step)" : ""));
 			} else {
@@ -2824,6 +2826,7 @@
 
 	function setSubDone(step, k, done) {
 		var p = questProgress();
+		if (!done) delete p.completed;
 		if (done) p.done[subKey(step, k)] = true;
 		else delete p.done[subKey(step, k)];
 		// Completing every sub-step completes the step itself — but only
@@ -2839,6 +2842,7 @@
 		}
 		if (allDone && subCascadeAllowed(step)) p.done[stepKey(step)] = true;
 		else if (!done) delete p.done[stepKey(step)];
+		if (allStepsDone()) p.completed = true;
 		store(PROGRESS_KEY, progress);
 		renderSteps();
 		if (overlayTimer) paintOverlay();
@@ -2871,6 +2875,7 @@
 
 	function setDone(step, done) {
 		var p = questProgress();
+		if (!done) delete p.completed;
 		if (done) p.done[stepKey(step)] = true;
 		else delete p.done[stepKey(step)];
 		// Ticking a step cascades to its sub-steps either way.
@@ -2878,6 +2883,7 @@
 			if (done) p.done[subKey(step, k)] = true;
 			else delete p.done[subKey(step, k)];
 		});
+		if (allStepsDone()) p.completed = true;
 		store(PROGRESS_KEY, progress);
 		renderSteps();
 		if (overlayTimer) paintOverlay();
@@ -3063,7 +3069,26 @@
 	}
 
 	function questStatus(q) {
+		if (progress[q.title] && progress[q.title].completed === true) return "COMPLETED";
 		return rmStatuses ? rmStatuses[normName(q.name)] || null : null;
+	}
+
+	// Older versions stored ticks only. Recover completed guides from their
+	// cached step keys, never from a guessed number of ticks.
+	function rememberCompletedGuides() {
+		var cache = load(GUIDE_CACHE_KEY, {}), changed = false;
+		Object.keys(progress).forEach(function (title) {
+			var p = progress[title], hit = cache[title];
+			if (!p || p.completed || !p.done || !hit || !hit.data) return;
+			var keys = [];
+			(hit.data.sections || []).forEach(function (section, si) {
+				(section.steps || []).forEach(function (_, ti) { keys.push(si + ":" + ti); });
+			});
+			if (keys.length && keys.every(function (key) { return p.done[key] === true; })) {
+				p.completed = true; changed = true;
+			}
+		});
+		if (changed) store(PROGRESS_KEY, progress);
 	}
 
 	// "Can do now": RuneMetrics says the requirements are met (userEligible)
@@ -3096,6 +3121,7 @@
 	}
 
 	function renderList() {
+		rememberCompletedGuides();
 		var filter = document.getElementById("search").value.trim().toLowerCase();
 		var main = document.getElementById("quest-list");
 		main.innerHTML = "";
