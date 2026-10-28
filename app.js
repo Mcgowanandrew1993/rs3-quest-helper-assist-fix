@@ -2355,7 +2355,7 @@
 				setAssistStatus("Assist: any option works on this screen — pick whichever you like.");
 			} else if (allMatches.length) {
 				drawOptionBoxes(allMatches, pos, img);
-				setAssistStatus((dialogReader.usingButtonFallback ? "Assist: button fallback v4.3 — highlighted \"" : "Assist: highlighted \"") +
+				setAssistStatus((dialogReader.usingButtonFallback ? "Assist: button fallback v4.4 — highlighted \"" : "Assist: highlighted \"") +
 					(allMatches[0].text || ("option " + (dlg.opts.indexOf(allMatches[0]) + 1))) + "\"" +
 					(matchedTarget.subIndex !== null ? " (sub-step)" : ""));
 			} else {

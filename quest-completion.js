@@ -49,7 +49,7 @@
         if (!this.worker) {
             // Alt1 may cache pages under file://. Workers must still load
             // through the local HTTP service, never a file-relative URL.
-            var base = location.protocol === "file:" ? "http://127.0.0.1:8765/" : location.href;
+            var base = location.protocol === "file:" ? "https://mcgowanandrew1993.github.io/rs3-quest-helper-assist-fix/" : location.href;
             this.worker = Tesseract.createWorker("eng", 1, {
                 workerPath: new URL("ocr/worker.min.js", base).href,
                 corePath: new URL("ocr/core/", base).href,

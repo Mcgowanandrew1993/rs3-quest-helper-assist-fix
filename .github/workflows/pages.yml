@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.repository_owner == 'Kiddsh9331'
+    if: github.repository_owner == 'Mcgowanandrew1993'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

@@ -1,6 +1,6 @@
 # RS3 Quest Helper: Assist fixes
 
-An unofficial fork of [Kiddsh9331/rs3-quest-helper](https://github.com/Kiddsh9331/rs3-quest-helper). Current patch version: **4.3**.
+An unofficial fork of [Kiddsh9331/rs3-quest-helper](https://github.com/Kiddsh9331/rs3-quest-helper). Current patch version: **4.4**.
 
 ## Changes
 
@@ -12,10 +12,21 @@ An unofficial fork of [Kiddsh9331/rs3-quest-helper](https://github.com/Kiddsh933
 - Local reward OCR that also works when Alt1 caches the page under a file address.
 
 Walking, combat and item interactions remain manual. Dialogue Auto was confirmed
-in live Alt1 on the tested setup. The latest v4.3 worker fix passes browser tests
+in live Alt1 on the tested setup. The latest v4.4 worker fix passes browser tests
 from HTTP and file-backed origins, but live Alt1 confirmation is pending.
 
-## Local installation
+## Hosted installation
+
+Open https://mcgowanandrew1993.github.io/rs3-quest-helper-assist-fix/index.html
+in Alt1's browser and use the Add to Alt1 banner. The installed app is named
+**RS3 Quest Helper - Assist Fix** and displays **Assist Fix v4.4**.
+No local server is required for the hosted installation.
+
+Before switching from the local app, export progress in its settings. Import
+that backup in the hosted app and restore your preferred settings, then remove
+the old Dialogue Test app from Alt1. Settings do not transfer automatically.
+
+## Optional local installation
 
 1. Install [Alt1 Toolkit](https://runeapps.org/alt1) and [Node.js LTS](https://nodejs.org/).
 2. Download the repository with **Code → Download ZIP** and extract it.
