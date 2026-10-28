@@ -1,5 +1,5 @@
 {
-	"appName": "RS3 Quest Helper",
+	"appName": "RS3 Quest Helper - Dialogue Test",
 	"description": "Step-by-step quest quick guides with progress tracking and on-screen step overlay.",
 	"appUrl": "./index.html",
 	"configUrl": "./appconfig.json",
@@ -13,3 +13,8 @@
 	"permissions": "pixel,overlay",
 	"activators": []
 }
+
+
+
+
+

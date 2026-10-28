@@ -385,7 +385,7 @@ class DialogReader {
         for (var a = 0; a < locs.length; a++) {
             var dx = locs[a].x + 30;
             var dy = locs[a].y + 7;
-            var checkline = imgref.toData(dx, dy, Math.min(500, imgref.width - a), 1);
+            var checkline = imgref.toData(dx, dy, Math.min(500, imgref.x + imgref.width - dx), 1);
             var row = null;
             for (var x = 0; x < checkline.width; x++) {
                 var i = x * 4;
@@ -413,6 +413,7 @@ class DialogReader {
         return r;
     }
 }
+
 exports["default"] = DialogReader;
 //TODO get rid of this or make it standard
 function coldiff(r1, g1, b1, r2, g2, b2) {
@@ -520,3 +521,5 @@ module.exports = /*#__PURE__*/JSON.parse('{"chars":[{"width":3,"bonus":35,"chr":
 /******/ })()
 ;
 });
+
+

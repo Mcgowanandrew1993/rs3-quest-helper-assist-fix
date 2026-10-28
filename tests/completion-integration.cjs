@@ -1,0 +1,9 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert');const c=vm.createContext({console,Date,URL,localStorage:{getItem(){return null},setItem(){}},document:{getElementById(){return {textContent:'',classList:{toggle(){}}}}},alt1:{rsLinked:true},A1lib:{captureHoldFullRs(){return {}}}});c.window=c;
+for(const f of ['fallback-auto.js','quest-completion.js'])vm.runInContext(fs.readFileSync('./'+f,'utf8'),c);
+const inject=`window.completionFixture=function(name,auto){guide={name:name,title:name+'/Quick guide',sections:[]};flatSteps=[{text:'Walk',sectionIndex:0,stepIndex:0,subs:[{text:'Sub'}]},{text:'Talk',chat:'1 Hello',sectionIndex:0,stepIndex:1},{text:'Quest complete',sectionIndex:0,stepIndex:2}];progress={};autoAdvance=auto;renderSteps=function(){};clearAssistOverlay=function(){};completionMarkedTitle=null;completionReader={scan:function(img,name,cb){window.pendingCompletion=cb}};fallbackAuto.active=true;convo.seen=10;convo.evidence={key:'old'};assistTick();return function(){return {allDone:allStepsDone(),done:Object.keys(questProgress().done),status:completionMarkedTitle}}};`;
+vm.runInContext(fs.readFileSync('./app.js','utf8').replace(/\tinit\(\);\s*\}\)\(\);\s*$/,inject+'\n})();'),c);
+let state=c.completionFixture('Imp Catcher',false);assert(!state().allDone);c.pendingCompletion('Imp Catcher');assert(state().allDone);assert.strictEqual(state().done.length,4);console.log('PASS: matching reward completes all steps and substeps with Auto off and a walking step selected');
+state=c.completionFixture('Imp Catcher',true);c.pendingCompletion('Druidic Ritual');assert(!state().allDone);console.log('PASS: wrong quest name cannot complete current guide');
+state=c.completionFixture('Imp Catcher',true);const stale=c.pendingCompletion;c.completionFixture('Impressing the Locals',true);stale('Imp Catcher');assert(!state().allDone);console.log('PASS: guide switched during OCR rejects stale result');
+
+

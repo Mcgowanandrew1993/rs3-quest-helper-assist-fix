@@ -55,6 +55,9 @@
 }
 
 html, body { height: 100%; }
+.build-strip { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; padding: 3px 8px; color: var(--gold); font-size: 11px; border-bottom: 1px solid var(--border); }
+.build-strip button { padding: 2px 5px; font-size: 11px; }
+.auto-evidence { flex-shrink: 0; padding: 4px 10px; font-size: 11px; line-height: 1.4; color: var(--text-muted, #bbb); border-top: 1px solid var(--border); max-height: 72px; overflow-y: auto; }
 
 body {
 	background: var(--bg);

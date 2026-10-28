@@ -4,9 +4,10 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>RS3 Quest Helper</title>
-	<link rel="stylesheet" href="style.css">
+	<link rel="stylesheet" href="style.css?v=4.3">
 </head>
 <body>
+	<div class="build-strip"><span>Dialogue test v4.3</span><button id="refresh-test-app" type="button">Reload update</button></div>
 	<div id="alt1-banner" class="banner hidden">
 		Not running inside Alt1.
 		<a id="addtoalt1" href="#">Click here to add this app to Alt1</a>
@@ -96,6 +97,7 @@
 			<span>Click or drag inside the box to place the overlay. It stays locked there until you move it again.</span>
 		</div>
 		<div id="assist-status" class="assist-status hidden"></div>
+		<div id="auto-evidence" class="auto-evidence">Auto diagnostics will appear here.</div>
 		<footer>
 			<button id="btn-back" title="Un-complete the previous step">&#9664; Back</button>
 			<button id="btn-next" class="primary" title="Complete the current step. While playing (game focused), press Alt1's app hotkey — Alt+1 by default — to do this without clicking.">Done, next &#9654;</button>
@@ -189,6 +191,20 @@
 	<script src="libs/dialog.js"></script>
 	<script src="libs/chatbox.js"></script>
 	<script src="libs/font_digits.js"></script>
-	<script src="app.js"></script>
+	<script src="dialog-frame.js?v=4.3"></script>
+<script src="fallback-auto.js?v=4.3"></script>
+<script src="dialog-fallback.js?v=4.3"></script>
+<script src="ocr/tesseract.min.js"></script>
+<script src="completion-frame.js?v=4.3"></script>
+<script src="quest-completion.js?v=4.3"></script>
+<script src="app.js?v=4.3"></script>
 </body>
 </html>
+
+
+
+
+
+
+
+

@@ -1,3 +1,9 @@
+# Unofficial Assist-fix fork
+
+Current patch: **v4.3**. See [FORK.md](FORK.md) for the fixes, installation instructions and limitations. Original documentation and credits follow.
+
+---
+
 # RS3 Quest Helper (Alt1 app)
 
 A step-by-step quest quick-guide overlay for RuneScape 3, built for the
@@ -105,3 +111,4 @@ grid the way renderer-hooking clients (Bolt/RuneLite-style) can.
 - Quest data: [RuneScape Wiki](https://runescape.wiki) (CC BY-NC-SA 3.0)
 - Screen reading: [alt1 libraries](https://github.com/skillbert/alt1) by Skillbert (RuneApps)
 - Assist-mode concept inspired by [bolt-questhelper](https://codeberg.org/JasperSurmont/bolt-questhelper)
+

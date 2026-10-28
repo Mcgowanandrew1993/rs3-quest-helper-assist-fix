@@ -1437,6 +1437,9 @@
 	var chatReader = null;
 	var chatFound = false;
 	var autoAdvance = load(AUTO_KEY, false);
+	var fallbackAuto = new QuestFallbackAuto();
+	var completionReader = null;
+	var completionMarkedTitle = null;
 
 	// Conversation tracker for auto-ticking dialogue steps. A conversation
 	// "ends" when a dialogue was on screen for >=2 ticks and then gone for
@@ -1998,6 +2001,14 @@
 		if (msg) msg += scaleHintText(chatScanMisses, chatFound, dialogEverFound);
 		node.textContent = msg || "";
 		node.classList.toggle("hidden", !msg);
+		var evidence = document.getElementById("auto-evidence");
+		if (evidence) {
+			var current = guide ? currentStep() : null;
+			evidence.textContent = !assistTimer ? "Assist is off." : !autoAdvance ? "Auto is off." :
+				current && !assistTargets(current, function (k) { return isSubDone(current, k); }).length ?
+				"This step has no listed dialogue choices; advance it manually." : fallbackAuto.summary();
+			if (completionReader && completionReader.error) evidence.textContent += " | " + completionReader.error;
+		}
 	}
 
 	function clearAssistOverlay() {
@@ -2126,7 +2137,7 @@
 		} catch (e) { /* overlay unavailable */ }
 	}
 
-	function markQuestComplete() {
+	function markQuestComplete(message) {
 		if (!guide) return;
 		var changed = false;
 		flatSteps.forEach(function (s) {
@@ -2139,12 +2150,17 @@
 			store(PROGRESS_KEY, progress);
 			renderSteps();
 			if (overlayTimer) paintOverlay();
-			setAssistStatus("Quest completion detected in chat — all steps marked done.");
+			setAssistStatus(message || "Quest completion detected in chat — all steps marked done.");
 		}
 	}
 
 	function assistTick() {
 		if (!guide) { setAssistStatus(""); return; }
+		if (completionMarkedTitle === guide.title && allStepsDone()) {
+			clearAssistOverlay();
+			setAssistStatus("Quest completion confirmed — all steps marked done.");
+			return;
+		}
 		if (alt1.rsLinked === false) { clearAssistOverlay(); return; }
 		assistTickN++;
 		var img;
@@ -2154,6 +2170,24 @@
 			setAssistStatus("Assist: could not capture the game screen.");
 			return;
 		}
+
+		// Definitive completion evidence takes priority over dialogue progress,
+		// even when Auto is off or the current step has no Chat entry.
+		try {
+			if (!completionReader) completionReader = new QuestCompletionReader();
+			var capturedTitle = guide.title;
+			var capturedName = guide.name || guide.title.replace(/\/Quick guide$/, "");
+			completionReader.scan(img, capturedName, function (confirmedName) {
+				if (!guide || guide.title !== capturedTitle ||
+					QuestCompletionReader.normalise(guide.name || guide.title.replace(/\/Quick guide$/, "")) !==
+					QuestCompletionReader.normalise(confirmedName)) return;
+				fallbackAuto.reset();
+				convo.key = null;
+				clearAssistOverlay();
+				markQuestComplete("Quest completion confirmed from reward screen — all steps marked done.");
+				completionMarkedTitle = guide.title;
+			});
+		} catch (completionError) { /* Optional OCR never interrupts highlighting. */ }
 
 		// Watch the chatbox for quest completion (heavier OCR — every 4th tick).
 		try {
@@ -2166,8 +2200,10 @@
 				if (chatFound) {
 					var lines = chatReader.read(img) || [];
 					for (var i = 0; i < lines.length; i++) {
-						if (/congratulations.*(complete|finish)|quest complete/i.test(lines[i].text)) {
+						if (QuestCompletionReader.matchesChat(lines[i].text, guide.name || guide.title.replace(/\/Quick guide$/, ""))) {
 							markQuestComplete();
+							completionMarkedTitle = guide.title;
+							return;
 						}
 					}
 				}
@@ -2224,6 +2260,24 @@
 			// ended must have shown one of this step's expected options.
 			// Sampled every 2nd tick so convoObserve's seen/gone tick
 			// thresholds keep their original 700ms-cadence timing.
+			var fallbackGate = { hold: false };
+			if (autoAdvance) {
+				var fallbackIndex = matchedTarget ? matchedCandIndex(matchedTarget.chat, dlg.opts, scrIdx,
+					optScreen.nextCand[matchedTarget.optionKey] || 0) : -1;
+				var fallbackEnumerated = matchedTarget && requiredConversations(matchedTarget.chat) > 1;
+				var kind = !pos ? "closed" : (dlg && dlg.opts && dlg.opts.length ? "options" :
+					(dialogReader.usingButtonFallback ? dialogReader.fallbackKind : (dlg && dlg.text ? "response" : "unknown")));
+				fallbackGate = fallbackAuto.observe({ key: stepKey(step), now: Date.now(), kind: kind,
+					fallback: dialogReader.usingButtonFallback, match: matchedTarget,
+					signature: dlg && dlg.opts ? dlg.opts.map(function (o) { return o.text; }).join("|") : "",
+					index: fallbackIndex,
+					last: fallbackEnumerated ? fallbackIndex : (matchedTarget ? lastMatchableCand(matchedTarget.chat) : -1),
+					requiredIndices: fallbackEnumerated ? [fallbackIndex] : (matchedTarget ? matchedTarget.chat.split(" / ")
+						.map(function (c, i) { return isMatchableCand(c) ? i : -1; }).filter(function (i) { return i >= 0; }) : []),
+					needsAccept: !!(matchedTarget && matchedTarget.chat.split(" / ").some(function (c) {
+						return /^accept(?: quest)?[.!]?$/i.test(c.trim());
+					})) });
+			}
 			if (autoAdvance && assistTickN % CONVO_EVERY === 0) {
 				var reqConv = 1;
 				var seq = null;
@@ -2243,9 +2297,10 @@
 						}
 					}
 				}
-				var res = convoObserve(stepKey(step), !!pos,
+				var res = convoObserve(stepKey(step), !!pos || fallbackGate.hold,
 					matchedTarget ? { key: stepKey(step), subIndex: matchedTarget.subIndex } : null, reqConv, seq);
 				if (res) {
+					if (!res.held) fallbackAuto.reset();
 					clearAssistOverlay();
 					if (res.held) {
 						setAssistStatus("Assist: conversation paused mid-chain (" + res.reached + "/" +
@@ -2276,8 +2331,12 @@
 			}
 
 			if (!pos) {
-				screenIndexGone();
+				if (!fallbackGate.hold) screenIndexGone();
 				clearAssistOverlay();
+				if (fallbackGate.hold) {
+					setAssistStatus("Assist: Auto paused — " + fallbackGate.reason + ". Use Done, next if this step is finished.");
+					return;
+				}
 				if (!autoAdvance || !convo.gone) {
 					setAssistStatus("Assist: on — waiting for a dialogue box. Target: " +
 						targets.map(function (t) { return t.chat; }).join(" | "));
@@ -2286,7 +2345,9 @@
 			}
 			if (!dlg || !dlg.opts || !dlg.opts.length) {
 				clearAssistOverlay();
-				setAssistStatus("Assist: dialogue open, no options readable yet.");
+				setAssistStatus(dialogReader.fallbackKind === "offer" ? "Assist: quest offer detected — accept the quest to continue." : dialogReader.fallbackKind === "response" ?
+					"Assist: NPC response detected — finish the conversation" + (autoAdvance ? "; Auto is tracking." : ".") :
+					"Assist: dialogue open, no options readable yet.");
 				return;
 			}
 			if (allMatches.length && allOptionsMatched(allMatches, dlg.opts)) {
@@ -2294,7 +2355,7 @@
 				setAssistStatus("Assist: any option works on this screen — pick whichever you like.");
 			} else if (allMatches.length) {
 				drawOptionBoxes(allMatches, pos, img);
-				setAssistStatus("Assist: highlighted \"" +
+				setAssistStatus((dialogReader.usingButtonFallback ? "Assist: button fallback v4.3 — highlighted \"" : "Assist: highlighted \"") +
 					(allMatches[0].text || ("option " + (dlg.opts.indexOf(allMatches[0]) + 1))) + "\"" +
 					(matchedTarget.subIndex !== null ? " (sub-step)" : ""));
 			} else {
@@ -2309,6 +2370,7 @@
 	}
 
 	function setAssist(on) {
+		fallbackAuto.reset();
 		var btn = document.getElementById("btn-assist");
 		if (assistTimer) { clearInterval(assistTimer); assistTimer = null; }
 		if (on) {
@@ -3598,6 +3660,8 @@
 	}
 
 	function init() {
+		var reloadTest = document.getElementById("refresh-test-app");
+		if (reloadTest) reloadTest.addEventListener("click", function () { location.reload(); });
 		applyTheme();
 		applyAppTextScale();
 		document.getElementById("search").addEventListener("input", renderList);
@@ -3881,6 +3945,8 @@
 			autoBtn.classList.toggle("active", autoAdvance);
 		}
 		autoBtn.addEventListener("click", function () {
+			fallbackAuto.reset();
+			convo.key = null;
 			if (!autoAdvance) {
 				if (!inAlt1()) { notify("Auto-tick only works inside Alt1."); return; }
 				if (!assistAvailable()) { notify("Auto-tick needs the pixel and overlay permissions."); return; }
@@ -4116,3 +4182,9 @@
 
 	init();
 })();
+
+
+
+
+
+
